@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" type="text/css" href="../layui/css/layui.css">
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<body>
+<table class="layui-table" id="tableOut" lay-filter="tableOut"></table>
+<script src="../layui/layui.js" charset="UTF-8"></script>
+
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+<script>
+    layui.use(['jquery', 'laydate', 'util', 'layer', 'table', 'form'], function ($, laydate, util, layer, table, form) {
+        var layer = layui.layer
+            ,tableData = [
+            [1, '小明', 16], [2, '小红', 18]
+        ]
+            ,table = layui.table;
+
+
+        //监听单元格编辑
+        table.on('edit(tableInput)', function(obj){
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+        });
+            // 假释真的需要默认点击搜索在下面table render过之后再调用$dom.click()即可
+        //监听工具条
+        table.on('tool(tableOut)', function (obj) { //注：tool是工具条事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var data = obj.data; //获得当前行数据
+            var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+            // 异常不要用它原来的这个作为tr的dom
+            // var tr = obj.tr; //获得当前行 tr 的DOM对象
+            var $this = $(this);
+            var tr = $this.parents('tr');
+            var trs = tr. children().children().children('table');
+            var trIndex = tr.data('index');
+            if (layEvent === 'detail') { //查看
+                //do somehing
+                layer.msg('detail');
+                console.log(data);
+            }else if (layEvent === 'addRow') {
+                layer.msg('addRow')
+            }else if (layEvent === 'del') { //删除
+                layer.confirm('真的删除行么', function (index) {
+                    obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                    layer.close(index);
+                    //向服务端发送删除指令
+                });
+            } else if (layEvent === 'edit') { //编辑
+                //do something
+
+                //同步更新缓存对应的值
+                obj.update({
+                    name: '123'
+                    , title: 'xxx'
+                });
+            } else if (layEvent === 'addRowTable') {
+                // 外围的table的id + tableIn_ + 当前的tr的data-index
+                $(this).attr('lay-event', 'fold').html('收起');
+                var tableId = 'tableOut_tableIn_' + trIndex;
+                var _html = [
+                    '<tr class="table-item">',
+                    '<td colspan="' + tr.find('td').length + '" style="padding: 6px 12px;">',
+                    '<table id="' + tableId + '" lay-filter="tableInput"></table>',
+                    '</td>',
+                    '</tr>'
+                ];
+                tr.after(_html.join('\n'));
+                // 渲染table
+                table.render({
+                    elem: '#' +tableId,
+                    data: data.friend||[],
+                    cols: [
+                        [
+                        {field:'id', title: 'ID'},
+                        {field:'name', title: '一级分类', edit: true},
+                        {field:'age', title: '操作'}
+
+                    ]
+                    ],
+
+                });
+                // $(window).resize();
+
+            } else if (layEvent === 'fold') {
+                $(this).attr('lay-event', 'addRowTable').html('查看二级分类');
+                tr.next().remove();
+            }
+        });
+        var tableIns = table.render({
+            elem: '#tableOut',
+            // data: [
+            // [1, '小明', 16],[2, '小红', 18]
+            // ],
+            data: [
+                {id: 1, name: '小米', age: '16',
+                    friend: [{id: 2, name: '大米', age: '<a class="layui-btn layui-btn-xs" lay-event="detail">编辑</a>' +
+                            '<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>'},
+                        {id: 5, name: '小虎', age: '<a class="layui-btn layui-btn-xs" lay-event="detail">编辑</a>' +
+                            '<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>'}]},
+                {id: 2, name: '大米', age: '28',
+                    friend: [{id: 1, name: '小米', age: '28'}]},
+                {id: 3, name: '小花', age: 0},
+                {id: 4, name: '小甲', age: '28'},
+                {id: 5, name: '小虎', age: '16'},
+                {id: 6, name: '小贤', age: '28'}
+                ],
+            page: {},
+            cols: [
+                [
+                // {type: 'number', fixed: true},
+                // {field: 'checkbox', type: 'checkbox', LAY_CHECKED:false, fixed: true},
+
+                {field: 'id', title: 'ID', sort: true},
+                {field: 'name', title: '名称', edit: true},
+                {field: 'age', title: '年龄', sort: true},
+                    {
+                        field: 'btn',
+                        title: '操作',
+                        align: 'center',
+                        templet: function (d) {
+                            // return '<a style="width: 100%; height: 100%;cursor: pointer;">展开</a>'
+                            return '<button class="layui-btn layui-btn-xs layui-btn-warm" lay-event="addRowTable">查看二级分类</button>' +
+                                '<button class="layui-btn layui-btn-xs layui-btn-normal" lay-event="addRow">添加二级分类</button>'
+                        }
+                    }
+            ]
+            ],
+
+        });
+        table.on('sort(tableOut)', function (obj) { //注：tool是工具条事件名，test是table原始容器的属性 lay-filter="对应的值"
+            //尽管我们的 table 自带排序功能，但并没有请求服务端。
+            //有些时候，你可能需要根据当前排序的字段，重新向服务端发送请求，从而实现服务端排序，如：
+            table.reload('tableOut', {
+                initSort: obj //记录初始排序，如果不设的话，将无法标记表头的排序状态。 layui 2.1.1 新增参数
+                , where: { //请求参数（注意：这里面的参数可任意定义，并非下面固定的格式）
+                    field: obj.field //排序字段
+                    , order: obj.type //排序方式
+                }
+            });
+        });
+        table.on('edit(tableOut)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            // debugger;
+            // this;
+            console.log(obj.value); //得到修改后的值
+            console.log(obj.field); //当前编辑的字段名
+            console.log(obj.data); //所在行的所有相关数据
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+        });
+    });
+</script>
+</body>
+</html>
